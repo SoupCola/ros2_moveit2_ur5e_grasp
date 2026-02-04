@@ -18,18 +18,27 @@ class ObjDetect(Node):
         self.declare_parameter("cam_info_topic", "/color/camera_info")
         self.declare_parameter("view_image", True)
         self.declare_parameter("publish_result", True)
+        self.declare_parameter("enable_tracking", False)  # 新增：控制是否启用目标跟踪
 
         # 参数读取
         model_path = self.get_parameter("model_path").value
         self.view_img = self.get_parameter("view_image").value
         self.publish_result = self.get_parameter("publish_result").value
+        self.enable_tracking = self.get_parameter("enable_tracking").value
 
         # 模型加载
         self.model = YOLO(model_path)
         self.names = self.model.names
 
         self.bridge = CvBridge()
-        self.tracker = Tracker()
+
+        # 只在启用跟踪时初始化 Tracker
+        if self.enable_tracking:
+            self.tracker = Tracker()
+            self.get_logger().info("Object tracking ENABLED")
+        else:
+            self.tracker = None
+            self.get_logger().info("Object tracking DISABLED")
 
         self.depth_instrinsic_inv = np.eye(3)
         self.depth = None
@@ -70,9 +79,11 @@ class ObjDetect(Node):
         confs = res.boxes.conf.cpu().numpy()
         clses = res.boxes.cls.cpu().numpy()
 
-        # 目标追踪
-        detections = [[int(x1), int(y1), int(x2), int(y2)] for x1, y1, x2, y2 in boxes]
-        tracks = self.tracker.update(detections)
+        # 目标追踪（仅在启用时）
+        tracks = []
+        if self.enable_tracking:
+            detections = [[int(x1), int(y1), int(x2), int(y2)] for x1, y1, x2, y2 in boxes]
+            tracks = self.tracker.update(detections)
 
         # 构造 Detection2DArray
         detection_result = Detection2DArray()
@@ -112,15 +123,24 @@ class ObjDetect(Node):
         sorted_detections = sorted(detections_list, key=lambda det: det.bbox.center.position.x)
         detection_result.detections.extend(sorted_detections)
 
-        # 画 track ID
-        sorted_tracks = sorted(tracks, key=lambda track: track['bbox'][0])
-
-        for visual_idx, track in enumerate(sorted_tracks):
-            x1, y1, x2, y2 = track['bbox']
-            # 显示 ID（绿色）+ 排序编号（蓝色）
-            cv2.putText(img0, f"Rank {visual_idx+1}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
-            # 画框
-            cv2.rectangle(img0, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        # 可视化：画 track ID 或检测框
+        if self.enable_tracking and tracks:
+            # 使用跟踪结果进行可视化
+            sorted_tracks = sorted(tracks, key=lambda track: track['bbox'][0])
+            for visual_idx, track in enumerate(sorted_tracks):
+                x1, y1, x2, y2 = track['bbox']
+                # 显示 Rank 编号（蓝色）
+                cv2.putText(img0, f"Rank {visual_idx+1}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                # 画框（绿色）
+                cv2.rectangle(img0, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        else:
+            # 不使用跟踪，直接显示检测结果
+            for idx, (x1, y1, x2, y2) in enumerate(boxes):
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+                # 显示编号（蓝色）
+                cv2.putText(img0, f"Obj {idx+1}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                # 画框（绿色）
+                cv2.rectangle(img0, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
         # 发布检测结果和追踪图像
         if self.view_img:
