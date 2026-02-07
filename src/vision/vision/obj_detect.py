@@ -12,7 +12,7 @@ from .tracker import Tracker
 class ObjDetect(Node):
     def __init__(self):
         super().__init__("obj_detect")
-        self.declare_parameter("model_path", "/home/soupcola/ros2_ws/src/ros2_moveit2_ur5e_grasp-main/ros2_moveit2_ur5e_grasp-main/src/vision/vision/yolov11/models/best.pt")
+        self.declare_parameter("model_path", "/home/soupcola/ros2_ws/src/ros2_moveit2_ur5e_grasp/src/vision/vision/yolov11/models/best.pt")
         self.declare_parameter("depth_topic", "/depth_registered/image_rect")
         self.declare_parameter("image_topic", "/color/image_raw")
         self.declare_parameter("cam_info_topic", "/color/camera_info")
