@@ -12,6 +12,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
 
 from ament_index_python.packages import get_package_share_directory
 import os
@@ -40,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
             ),
         ]
     )
-    robot_description = {"robot_description": robot_description_content}
+    robot_description = {"robot_description": ParameterValue(robot_description_content, value_type=str)}
 
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
@@ -53,7 +54,7 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        output="log",
+        output="screen",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(launch_rviz),
     )

@@ -5,7 +5,33 @@
         prefix
         parent
         *origin
-        include_ros2_control:=true">
+        include_ros2_control:=true
+        add_hand_eye_camera:=false
+        camera_parent
+        camera_origin_xyz
+        camera_origin_rpy">
+
+        <!-- Set default values for camera parameters using xacro:if block -->
+        <xacro:if value="${camera_parent == ''}">
+            <xacro:property name="camera_parent_val" value="${prefix}robotiq_85_base_link"/>
+        </xacro:if>
+        <xacro:unless value="${camera_parent == ''}">
+            <xacro:property name="camera_parent_val" value="${camera_parent}"/>
+        </xacro:unless>
+
+        <xacro:if value="${camera_origin_xyz == ''}">
+            <xacro:property name="camera_origin_xyz_val" value="0.06 0 0.04"/>
+        </xacro:if>
+        <xacro:unless value="${camera_origin_xyz == ''}">
+            <xacro:property name="camera_origin_xyz_val" value="${camera_origin_xyz}"/>
+        </xacro:unless>
+
+        <xacro:if value="${camera_origin_rpy == ''}">
+            <xacro:property name="camera_origin_rpy_val" value="0 -0.785 0"/>
+        </xacro:if>
+        <xacro:unless value="${camera_origin_rpy == ''}">
+            <xacro:property name="camera_origin_rpy_val" value="${camera_origin_rpy}"/>
+        </xacro:unless>
 
         <!-- ros2 control include -->
         <xacro:include filename="$(find robotiq_description)/urdf/2f_85.ros2_control.xacro" />
@@ -324,5 +350,15 @@
                 <contact_topic>__default_topic__</contact_topic>
              </plugin>
          </gazebo> -->
+
+        <!-- ==================== HAND-EYE CAMERA ==================== -->
+        <xacro:if value="${add_hand_eye_camera}">
+            <xacro:include filename="$(find robotiq_description)/urdf/hand_eye_camera.urdf.xacro" />
+            <xacro:hand_eye_camera
+                prefix="${prefix}hand_eye_"
+                parent="${camera_parent_val}">
+                <origin xyz="${camera_origin_xyz_val}" rpy="${camera_origin_rpy_val}" />
+            </xacro:hand_eye_camera>
+        </xacro:if>
     </xacro:macro>
 </robot>

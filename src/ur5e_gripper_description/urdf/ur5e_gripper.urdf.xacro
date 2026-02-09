@@ -97,10 +97,28 @@
     <!-- position robot in the world -->
   </xacro:ur_robot>
 
-  <!-- gripper -->
-  <xacro:robotiq_gripper name="RobotiqGripperHardwareInterface" prefix="$(arg tf_prefix)" parent="$(arg tf_prefix)tool0">
+  <!-- gripper attached to tool0 -->
+  <xacro:robotiq_gripper name="RobotiqGripperHardwareInterface" prefix="$(arg tf_prefix)" parent="$(arg tf_prefix)tool0"
+      include_ros2_control="true"
+      add_hand_eye_camera="false"
+      camera_parent="$(arg tf_prefix)tool0"
+      camera_origin_xyz="0 0 0"
+      camera_origin_rpy="0 0 0">
     <origin xyz="0 0 0" rpy="0 0 0" />
   </xacro:robotiq_gripper>
+
+  <!-- ==================== HAND-EYE CAMERA ==================== -->
+  <!-- Hand-eye camera attached to tool0 (end effector), NOT to gripper -->
+  <!-- Camera body is 90 degrees to end effector flange, lens faces DOWN (parallel to gripper) -->
+  <xacro:include filename="$(find robotiq_description)/urdf/hand_eye_camera.urdf.xacro" />
+  <xacro:hand_eye_camera
+      prefix="$(arg tf_prefix)hand_eye_"
+      parent="$(arg tf_prefix)tool0">
+      <!-- Position: offset from tool0 center -->
+      <!-- xyz: 0.06m to the side (left), 0m forward, 0.04m up -->
+      <!-- rpy: camera body rotated 90deg (roll=1.57) around flange, lens pointing down -->
+      <origin xyz="0 0.06 0.04" rpy="1.5708 0 0" />
+  </xacro:hand_eye_camera>
 
   <xacro:if value="$(arg sim_gazebo)">
     <!-- Gazebo plugins -->
@@ -110,4 +128,5 @@
       </plugin>
     </gazebo>
   </xacro:if>
+
 </robot>

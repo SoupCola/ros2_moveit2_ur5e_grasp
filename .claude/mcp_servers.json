@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "ros2-docs": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/opt/ros/humble/share/doc"],
+      "description": "访问本地安装的 ROS 2 Humble 文档"
+    },
+    "project-context": {
+      "command": "python3",
+      "args": [".claude/tools/context_provider.py"],
+      "description": "提供当前 Node 和 Topics 图的上下文信息"
+    }
+  }
+}

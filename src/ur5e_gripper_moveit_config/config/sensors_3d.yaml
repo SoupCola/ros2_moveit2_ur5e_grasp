@@ -1,9 +1,9 @@
-sensors:  
+sensors:
   - point_cloud_camera
 
 point_cloud_camera:
     sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
-    point_cloud_topic: /depth/points_filtered
+    point_cloud_topic: /hand_eye_depth/points
     max_range: 5.0
     point_subsample: 1
     padding_offset: 0.05

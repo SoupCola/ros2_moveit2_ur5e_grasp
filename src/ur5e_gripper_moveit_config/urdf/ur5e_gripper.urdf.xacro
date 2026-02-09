@@ -13,20 +13,189 @@
         <origin xyz="0.3 0 1.03" rpy="0 0 0" />
     </xacro:ur5e_gripper>
 
-    <!-- realsense d435 -->
+    <!-- ==================== CAMERAS ==================== -->
     <xacro:arg name="use_nominal_extrinsics" default="true"/>
     <xacro:arg name="add_plug" default="false" />
     <xacro:arg name="use_mesh" default="true" />
-    <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
-    <xacro:sensor_d435 parent="world" use_nominal_extrinsics="$(arg use_nominal_extrinsics)" add_plug="$(arg add_plug)" use_mesh="$(arg use_mesh)">
-        <origin xyz="1.5 0 2" rpy="0 0.785398163 3.1415926"/>
-    </xacro:sensor_d435>
 
+    <!-- Include RealSense D435 materials -->
+    <xacro:include filename="$(find realsense2_description)/urdf/_materials.urdf.xacro" />
+
+    <!-- ==================== WORLD VIEW CAMERA (For Grasp Detection) ==================== -->
+    <!-- Manually defined camera to avoid auto-added plugins -->
+    <link name="world_view_camera_bottom_screw_frame"/>
+    <joint name="world_view_camera_joint" type="fixed">
+        <origin xyz="1.5 0 2" rpy="0 0.785398163 3.1415926"/>
+        <parent link="world"/>
+        <child link="world_view_camera_bottom_screw_frame"/>
+    </joint>
+
+    <joint name="world_view_camera_link_joint" type="fixed">
+        <origin xyz="0.0106 0.0175 0.0125" rpy="0 0 0"/>
+        <parent link="world_view_camera_bottom_screw_frame"/>
+        <child link="world_view_camera_link"/>
+    </joint>
+
+    <link name="world_view_camera_link">
+        <visual>
+            <origin rpy="1.5708 0 1.5708" xyz="0.0043 -0.0175 0"/>
+            <geometry>
+                <mesh filename="$(find realsense2_description)/meshes/d435.dae"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin rpy="0 0 0" xyz="0 -0.0175 0"/>
+            <geometry>
+                <box size="0.02505 0.09 0.025"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.001"/>
+            <origin xyz="0 0 0"/>
+            <inertia ixx="1e-6" ixy="0.0" ixz="0.0" iyy="1e-6" iyz="0.0" izz="1e-6"/>
+        </inertial>
+    </link>
+
+    <!-- Camera frames for world camera -->
+    <xacro:if value="$(arg use_nominal_extrinsics)">
+        <joint name="world_view_camera_depth_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <parent link="world_view_camera_link"/>
+            <child link="world_view_camera_depth_frame"/>
+        </joint>
+        <link name="world_view_camera_depth_frame"/>
+        <joint name="world_view_camera_depth_optical_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+            <parent link="world_view_camera_depth_frame"/>
+            <child link="world_view_camera_depth_optical_frame"/>
+        </joint>
+        <link name="world_view_camera_depth_optical_frame"/>
+        <joint name="world_view_camera_color_joint" type="fixed">
+            <origin xyz="0 0.015 0" rpy="0 0 0"/>
+            <parent link="world_view_camera_link"/>
+            <child link="world_view_camera_color_frame"/>
+        </joint>
+        <link name="world_view_camera_color_frame"/>
+        <joint name="world_view_camera_color_optical_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+            <parent link="world_view_camera_color_frame"/>
+            <child link="world_view_camera_color_optical_frame"/>
+        </joint>
+        <link name="world_view_camera_color_optical_frame"/>
+        <joint name="world_view_camera_infra1_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <parent link="world_view_camera_link"/>
+            <child link="world_view_camera_infra1_frame"/>
+        </joint>
+        <link name="world_view_camera_infra1_frame"/>
+        <joint name="world_view_camera_infra1_optical_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+            <parent link="world_view_camera_infra1_frame"/>
+            <child link="world_view_camera_infra1_optical_frame"/>
+        </joint>
+        <link name="world_view_camera_infra1_optical_frame"/>
+        <joint name="world_view_camera_infra2_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <parent link="world_view_camera_link"/>
+            <child link="world_view_camera_infra2_frame"/>
+        </joint>
+        <link name="world_view_camera_infra2_frame"/>
+        <joint name="world_view_camera_infra2_optical_joint" type="fixed">
+            <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+            <parent link="world_view_camera_infra2_frame"/>
+            <child link="world_view_camera_infra2_optical_frame"/>
+        </joint>
+        <link name="world_view_camera_infra2_optical_frame"/>
+    </xacro:if>
+
+    <!-- Gazebo visual and sensors for world camera -->
+    <gazebo reference="world_view_camera_link">
+        <material>Gazebo/Grey</material>
+        <self_collide>0</self_collide>
+        <enable_wind>0</enable_wind>
+        <kinematic>0</kinematic>
+        <gravity>1</gravity>
+        <mu2>1</mu2>
+        <fdir1>0 0 0</fdir1>
+        <kp>1e+13</kp>
+        <kd>1</kd>
+
+        <sensor name="world_view_cameracolor" type="camera">
+            <camera>
+                <horizontal_fov>1.57</horizontal_fov>
+                <image>
+                    <width>1280</width>
+                    <height>720</height>
+                    <format>RGB_INT8</format>
+                </image>
+                <clip>
+                    <near>0.1</near>
+                    <far>100</far>
+                </clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.007</stddev>
+                </noise>
+            </camera>
+            <always_on>1</always_on>
+            <update_rate>30</update_rate>
+            <visualize>1</visualize>
+        </sensor>
+
+        <sensor name="world_view_cameradepth" type="depth">
+            <camera>
+                <horizontal_fov>1.57</horizontal_fov>
+                <image>
+                    <width>1280</width>
+                    <height>720</height>
+                </image>
+                <clip>
+                    <near>0.1</near>
+                    <far>100</far>
+                </clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.100</stddev>
+                </noise>
+            </camera>
+            <always_on>1</always_on>
+            <update_rate>30</update_rate>
+            <visualize>0</visualize>
+        </sensor>
+    </gazebo>
+
+    <!-- Gazebo plugin for world camera -->
     <gazebo>
-        <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-            <parameters>$(find ur5e_gripper_moveit_config)/config/ur5e_gripper_controllers.yaml</parameters>
+        <plugin name="world_camera_plugin" filename="librealsense_gazebo_plugin.so">
+            <prefix></prefix>
+            <depthUpdateRate>30.0</depthUpdateRate>
+            <colorUpdateRate>30.0</colorUpdateRate>
+            <infraredUpdateRate>1.0</infraredUpdateRate>
+            <depthTopicName>depth/image_raw</depthTopicName>
+            <depthCameraInfoTopicName>depth/camera_info</depthCameraInfoTopicName>
+            <colorTopicName>color/image_raw</colorTopicName>
+            <colorCameraInfoTopicName>color/camera_info</colorCameraInfoTopicName>
+            <infrared1TopicName>infra1/image_raw</infrared1TopicName>
+            <infrared1CameraInfoTopicName>infra1/camera_info</infrared1CameraInfoTopicName>
+            <infrared2TopicName>infra2/image_raw</infrared2TopicName>
+            <infrared2CameraInfoTopicName>infra2/camera_info</infrared2CameraInfoTopicName>
+            <pointCloud>true</pointCloud>
+            <pointCloudTopicName>depth/points</pointCloudTopicName>
+            <pointCloudCutoff>0.5</pointCloudCutoff>
+            <rangeMinDepth>0.2</rangeMinDepth>
+            <rangeMaxDepth>10.0</rangeMaxDepth>
+            <colorOpticalframeName>world_view_camera_color_optical_frame</colorOpticalframeName>
+            <depthOpticalframeName>world_view_camera_depth_optical_frame</depthOpticalframeName>
+            <infrared1OpticalframeName>world_view_camera_infra1_optical_frame</infrared1OpticalframeName>
+            <infrared2OpticalframeName>world_view_camera_infra2_optical_frame</infrared2OpticalframeName>
         </plugin>
     </gazebo>
+
+    <!-- ==================== GAZEBO PLUGINS ==================== -->
+    <!-- gazebo_ros2_control plugin is automatically added by ur_macro.xacro when sim_gazebo=true -->
+    <!-- Controller config is loaded via ros2_control parameters in ur.ros2_control.xacro -->
 
     <gazebo>
         <plugin name="gazebo_grasp_fix" filename="libgazebo_grasp_fix.so">
